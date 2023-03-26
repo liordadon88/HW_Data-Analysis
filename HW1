@@ -1,0 +1,9 @@
+def my_func(x1,x2,x3):
+    if isinstance(x1,str)==True or isinstance(x2, str)==True or isinstance(x3, str)==True:
+        return None
+    elif isinstance(x1, float)==False or isinstance(x2, float)==False or isinstance(x3, float)==False:
+        return('Error: parameters should be float')
+    elif ((x1+x2+x3)*(x2+x3)*x3)==0:
+        return('Not a number-denominator equals zero')
+    else:
+        return(((x1+x2+x3)*(x2+x3)*x3)/(x1+x2+x3))
