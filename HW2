@@ -1,0 +1,82 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+df = pd.read_csv("matala2_cosmetics_2019-Nov.csv")
+df=df.dropna()
+
+#Q1
+df['event_time'] = pd.to_datetime(df['event_time'])
+df=df.sort_values(['event_time'])
+df['next_event_time']=df.groupby(["user_session"])["event_time"].shift(-1)
+df['duration_to_next_event'] = (df['next_event_time'] - df['event_time']).dt.total_seconds()
+df['duration_to_next_event'] = df['duration_to_next_event'].fillna(0)
+
+#Q2
+df['event_time'] = pd.to_datetime(df['event_time'])
+df=df.sort_values(['event_time'])
+df['next_date_time']=df.groupby(["user_id"])["event_time"].shift(1)
+df['duration_to_next_date'] = ( df['event_time']-df['next_date_time']).dt.days
+df['duration_to_next_date'] = df['duration_to_next_date'].fillna(0)
+data=df[df.loc[:,"duration_to_next_date"]==5]
+data["funnel_number"]=data.groupby(["user_id"])[["event_time"]].rank(method="first", ascending=True)+1
+df=df.merge(data, how='left', on=list(df.columns))
+df["funnel_number"]=df.groupby("user_id")["funnel_number"].fillna(method='ffill')
+df["funnel_number"]= df["funnel_number"].fillna(1)
+df["funnel_number"]=df["funnel_number"].astype(int)
+
+#Q3
+df['shifted_session'] = df['user_session'].shift()
+df['same_session'] = np.where(df['shifted_session']==df['user_session'],1,0)
+df['index_in_funnel'] = df.groupby(['user_id','same_session',"funnel_number"])['session_same'].cumsum()+1
+
+#Q4
+def float_price(num):
+    try:
+        input_price = float(num)
+    except ValueError:
+        try:
+            x=(re.findall(r'\d+\.\d+', num)[0])
+            input_price=float(x)
+        except ValueError:
+            input_price=np.NaN
+    return input_price
+df['price'] = df['price'].apply(float_price)
+df.head()
+
+#Q5
+typs_event=df["event_type"].unique()
+typs_event
+#['purchase', 'view', 'remove_from_cart', 'cart']
+t1=len(df[df.loc[:,"event_type"]==typs_event[0]])
+t2=len(df[df.loc[:,"event_type"]==typs_event[1]])
+t3=len(df[df.loc[:,"event_type"]==typs_event[2]])
+t4=len(df[df.loc[:,"event_type"]==typs_event[3]])
+x = typs_event
+y = [t1,t2,t3,t4]
+
+plt.bar(x,y,align='center',color="green") # A bar chart
+plt.xlabel('event type')
+plt.ylabel('count')
+plt.show()
+
+#Q6
+session_data=df.groupby(["user_session","user_id","funnel_number","index_in_funnel"]).count().reset_index()
+session_data=session_data.loc[:,["user_session","user_id","funnel_number","index_in_funnel","event_time"]]
+session_data.rename(columns = {"event_time":"count_visit"}, inplace = True)
+time_of_visit=df.groupby(["user_session","funnel_number","index_in_funnel"])[["duration_to_next_event"]].sum().reset_index()
+session_data=session_data.merge(time_of_visit, how='left', on=["user_session","funnel_number","index_in_funnel"])
+session_data.rename(columns = {"duration_to_next_event":"time_of_visit_in_minuts"}, inplace = True)
+session_data["time_of_visit_in_minuts"]=session_data["time_of_visit_in_minuts"]/60
+view=df[df.loc[:,"event_type"]=="view"]
+list_of_viewed=view.groupby(["user_session","user_id","funnel_number","index_in_funnel"])["product_id"].apply(list).reset_index(name='list_of_viewed')
+session_data=session_data.merge(list_of_viewed, how='left', on=["user_id","user_session","funnel_number","index_in_funnel"])
+cart=df[df.loc[:,"event_type"]=="cart"]
+list_of_added_to_cart=cart.groupby(["user_session","user_id","funnel_number","index_in_funnel"])["product_id"].apply(list).reset_index(name='list_of_added_to_cart')
+session_data=session_data.merge(list_of_added_to_cart, how='left', on=["user_id","user_session","funnel_number","index_in_funnel"])
+purchase=df[df.loc[:,"event_type"]=="purchase"]
+list_of_purchased=purchase.groupby(["user_session","user_id","funnel_number","index_in_funnel"])["product_id"].apply(list).reset_index(name='list_of_purchased')
+session_data=session_data.merge(list_of_purchased, how='left', on=["user_id","user_session","funnel_number","index_in_funnel"])
+session_data
+
