@@ -28,8 +28,8 @@ df["funnel_number"]=df["funnel_number"].astype(int)
 
 #Q3
 df['shifted_session'] = df['user_session'].shift()
-df['same_session'] = np.where(df['shifted_session']==df['user_session'],1,0)
-df['index_in_funnel'] = df.groupby(['user_id','same_session',"funnel_number"])['session_same'].cumsum()+1
+df['same_session'] = np.where(df['shifted_session']==df['user_session'],0,1)
+df['index_in_funnel'] = df.groupby(['user_id',"funnel_number"])['same_session'].cumsum()
 
 #Q4
 def float_price(num):
