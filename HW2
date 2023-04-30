@@ -79,5 +79,6 @@ session_data=session_data.merge(list_of_added_to_cart, how='left', on=["user_id"
 purchase=df[df.loc[:,"event_type"]=="purchase"]
 list_of_purchased=purchase.groupby(["user_session","user_id","funnel_number","index_in_funnel"])["product_id"].apply(list).reset_index(name='list_of_purchased')
 session_data=session_data.merge(list_of_purchased, how='left', on=["user_id","user_session","funnel_number","index_in_funnel"])
+session_data=session_data.set_index('user_session')
 session_data
 
