@@ -27,6 +27,7 @@ df["funnel_number"]= df["funnel_number"].fillna(1)
 df["funnel_number"]=df["funnel_number"].astype(int)
 
 #Q3
+df=df.sort_values(by=['user_id','user_session',"event_time"])
 df['shifted_session'] = df['user_session'].shift()
 df['same_session'] = np.where(df['shifted_session']==df['user_session'],0,1)
 df['index_in_funnel'] = df.groupby(['user_id',"funnel_number"])['same_session'].cumsum()
