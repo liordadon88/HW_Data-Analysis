@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import re
 df = pd.read_csv("matala2_cosmetics_2019-Nov.csv")
-df=df.dropna()
+
 
 #Q1
 df['event_time'] = pd.to_datetime(df['event_time'])
